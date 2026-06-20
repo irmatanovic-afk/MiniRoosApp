@@ -6,7 +6,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <title>Soccer Tracker — Grange Thunder</title>
+  <title>Soccer Tracker — Grange Lions U6</title>
   <meta name="theme-color" content="#1FAA59">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -81,8 +81,8 @@
     <div style="margin:6px 16px 2px;background:#1FAA59;border-radius:26px;padding:16px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 24px -12px rgba(31,170,89,.6);flex:none;">
       <div style="width:54px;height:54px;border-radius:50%;background:#ffd23f;display:flex;align-items:center;justify-content:center;font-size:30px;flex:none;">⚡</div>
       <div style="flex:1;">
-        <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:22px;color:#fff;line-height:1.05;">Grange Thunder</div>
-        <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:12.5px;color:rgba(255,255,255,.9);margin-top:2px;">Under 8s · Saturday League</div>
+        <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:22px;color:#fff;line-height:1.05;">Grange Lions U6</div>
+        <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:12.5px;color:rgba(255,255,255,.9);margin-top:2px;">Under 6s · Saturday League</div>
       </div>
       <div id="record" style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:11px;color:#fff;background:rgba(255,255,255,.22);padding:5px 10px;border-radius:14px;text-align:center;line-height:1.2;"></div>
     </div>
@@ -169,7 +169,15 @@
       const oppName = r.opp||r.Opponent||'';
       const opp = findOpp(String(oppName));
       const home = String(r.ha||r['Home/Away']||'Home').trim()==='Home';
-      const rawDate = r.date || (r.Date instanceof Date ? r.Date.toISOString().slice(0,10) : String(r.Date||'').slice(0,10));
+      const rawDate = r.date || (() => {
+        const d = r.Date;
+        if (!d) return '';
+        if (d instanceof Date) return d.toISOString().slice(0,10);
+        const s = String(d).trim();
+        const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+        return s.slice(0,10);
+      })();
       const timeRaw = String(r.time||r.Time||'9:00').replace(/[^\d:]/g,'');
       const gf = r.gf!=null ? r.gf : r['Goals For'];
       const ga = r.ga!=null ? r.ga : r['Goals Against'];
@@ -266,7 +274,7 @@
           <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
             <div style="display:flex;flex-direction:column;align-items:center;gap:7px;flex:1;">
               <div style="${badgeStyle('#1FAA59',58,30)}">⚡</div>
-              <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:13.5px;color:#15321f;text-align:center;line-height:1.1;">Grange Thunder</div>
+              <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:13.5px;color:#15321f;text-align:center;line-height:1.1;">Grange Lions U6</div>
             </div>
             <div style="flex:none;width:46px;height:46px;border-radius:50%;background:#ffd23f;display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-weight:700;font-size:14px;color:#7a5a00;box-shadow:0 4px 9px rgba(0,0,0,.14);">VS</div>
             <div style="display:flex;flex-direction:column;align-items:center;gap:7px;flex:1;">
@@ -319,7 +327,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:14px;">
           <div style="${badgeStyle('#1FAA59',64,32)}">⚡</div>
-          <div style="flex:1;font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#15321f;">Grange Thunder</div>
+          <div style="flex:1;font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#15321f;">Grange Lions U6</div>
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0 4px;">
           ${stepperBtn('btn-dec-us','–')}
@@ -361,7 +369,7 @@
   const data = rows.slice(1).filter(r => r.some(c => c !== '')).map(row => {
     const obj = {};
     headers.forEach((h, i) => {
-      obj[h] = row[i] instanceof Date ? row[i].toISOString().slice(0,10) : String(row[i]);
+      obj[h] = row[i] instanceof Date ? Utilities.formatDate(row[i], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(row[i]);
     });
     return obj;
   });

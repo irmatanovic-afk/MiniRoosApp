@@ -1,7 +1,7 @@
 {
-  "name": "Grange Thunder",
-  "short_name": "Thunder",
-  "description": "Soccer fixture and score tracker for Grange Thunder Under 8s",
+  "name": "Grange Lions U6",
+  "short_name": "Lions U6",
+  "description": "Soccer fixture and score tracker for Grange Lions Under 6s",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#fff7ec",
