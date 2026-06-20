@@ -7,6 +7,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <title>Soccer Tracker — Grange Thunder</title>
+  <meta name="theme-color" content="#1FAA59">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Thunder">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -20,7 +26,7 @@
       padding: 48px 24px;
     }
 
-    @media (max-width: 460px) {
+    @media (max-width: 460px), (display-mode: standalone) {
       body { padding: 0; align-items: stretch; min-height: 100dvh; }
       .phone-outer {
         width: 100% !important;
@@ -87,285 +93,413 @@
     <!-- Bottom nav -->
     <div id="nav" style="flex:none;display:flex;gap:8px;padding:10px 16px 16px;background:#fff7ec;"></div>
 
+    <!-- Settings / modal overlay -->
+    <div id="modal"></div>
+
   </div>
 </div>
 
 <script>
-  // ─── Data ─────────────────────────────────────────────────────────────────────
-  const O = [
-    { name: 'Riverside Rovers', color: '#ef4444', emoji: '🦊' },
-    { name: 'Seaview Sharks',   color: '#2b7fff', emoji: '🦈' },
-    { name: 'Sunnybrook FC',    color: '#f5a623', emoji: '☀️' },
-    { name: 'Hilltop Comets',   color: '#8b5cf6', emoji: '☄️' },
-    { name: 'Bayside Dolphins', color: '#06b6d4', emoji: '🐬' },
+  // ─── Opponents ────────────────────────────────────────────────────────────────
+  const ALL_OPPS = [
+    { name:'Adelaide Titans',         color:'#dc2626', emoji:'👑' },
+    { name:'WT Birkalla (Black)',      color:'#374151', emoji:'🖤' },
+    { name:'Mount Barker United',      color:'#2563eb', emoji:'🏔️' },
+    { name:'WT Birkalla (Yellow)',     color:'#d97706', emoji:'⭐' },
+    { name:'Plympton FC',             color:'#7c3aed', emoji:'🔮' },
+    { name:'South Adelaide',          color:'#be123c', emoji:'🦅' },
+    { name:'Sturt Lions (Blue)',       color:'#1d4ed8', emoji:'🦁' },
+    { name:'Adelaide Thunder',        color:'#0369a1', emoji:'⛈️' },
+    { name:'Fulham United (White)',   color:'#64748b', emoji:'⚽' },
+    { name:'Adelaide Cobras (Green)', color:'#15803d', emoji:'🐍' },
+    { name:'Sturt Lions (Orange)',    color:'#ea580c', emoji:'🦁' },
   ];
 
-  const FIXTURES = [
-    { opp: O[0], home: true,  day: 'SAT', date: '21 Jun', dd: '21', time: '10:00 am', venue: 'Grange Oval',     countdown: 'in 3 days'  },
-    { opp: O[1], home: false, day: 'SAT', date: '28 Jun', dd: '28', time: '9:30 am',  venue: 'Seaview Reserve', countdown: 'next week'  },
-    { opp: O[2], home: true,  day: 'SAT', date: '5 Jul',  dd: '5',  time: '10:00 am', venue: 'Grange Oval',     countdown: 'in 2 weeks' },
+  // ─── Real schedule ────────────────────────────────────────────────────────────
+  const RAW_SCHEDULE = [
+    {round:1,  date:'2026-04-19',time:'9:30', ground:'Grange Recreation Reserve',                ha:'Home',opp:'Adelaide Titans',        gf:13,ga:2  },
+    {round:2,  date:'2026-04-26',time:'8:30', ground:'Jack Smith Park',                          ha:'Away',opp:'WT Birkalla (Black)',     gf:11,ga:10 },
+    {round:3,  date:'2026-05-03',time:'9:30', ground:'Grange Recreation Reserve',                ha:'Home',opp:'Mount Barker United',     gf:5, ga:4  },
+    {round:4,  date:'2026-05-10',time:'9:30', ground:'Grange Recreation Reserve',                ha:'Home',opp:'WT Birkalla (Yellow)',    gf:6, ga:0  },
+    {round:5,  date:'2026-05-17',time:'9:00', ground:'Plympton Oval',                           ha:'Away',opp:'Plympton FC',             gf:7, ga:2  },
+    {round:6,  date:'2026-05-24',time:'10:30',ground:"O'Sullivan Beach Sports & Community Club",ha:'Away',opp:'South Adelaide',          gf:14,ga:0  },
+    {round:7,  date:'2026-05-31',time:'9:30', ground:'Grange Recreation Reserve',                ha:'Home',opp:'Sturt Lions (Blue)',      gf:8, ga:4  },
+    {round:8,  date:'2026-06-14',time:'8:30', ground:'SAWSA Park',                              ha:'Away',opp:'Adelaide Thunder',        gf:10,ga:1  },
+    {round:9,  date:'2026-06-20',time:'13:30',ground:'Grange Recreation Reserve',                ha:'Home',opp:'Fulham United (White)',   gf:5, ga:4  },
+    {round:10, date:'2026-06-28',time:'8:35', ground:'Pro Paint & Panel - Weigall Oval',        ha:'Away',opp:'Adelaide Cobras (Green)', gf:null,ga:null},
+    {round:11, date:'2026-07-06',time:'9:30', ground:'Grange Recreation Reserve',                ha:'Home',opp:'Sturt Lions (Orange)',    gf:null,ga:null},
+    {round:12, date:'2026-07-19',time:'10:00',ground:'Matheson Reserve',                         ha:'Away',opp:'Adelaide Titans',         gf:null,ga:null},
+    {round:13, date:'2026-07-26',time:'9:30', ground:'Grange Recreation Reserve',                ha:'Home',opp:'WT Birkalla (Black)',     gf:null,ga:null},
+    {round:14, date:'2026-08-02',time:'9:15', ground:'Summit Sport & Recreation Park',           ha:'Away',opp:'Mount Barker United',     gf:null,ga:null},
+    {round:15, date:'2026-08-09',time:'9:30', ground:'Grange Recreation Reserve',                ha:'Home',opp:'Plympton FC',             gf:null,ga:null},
+    {round:16, date:'2026-08-16',time:'8:30', ground:'Jack Smith Park',                          ha:'Away',opp:'WT Birkalla (Yellow)',    gf:null,ga:null},
+    {round:17, date:'2026-08-23',time:'9:30', ground:'Grange Recreation Reserve',                ha:'Home',opp:'South Adelaide',          gf:null,ga:null},
+    {round:18, date:'2026-08-30',time:'9:00', ground:'Hewett Sports Ground',                    ha:'Away',opp:'Sturt Lions (Blue)',      gf:null,ga:null},
   ];
+
+  // ─── Date / schedule helpers ──────────────────────────────────────────────────
+  function fmtTime(t) {
+    const [h,m] = String(t).split(':').map(Number);
+    return `${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'am':'pm'}`;
+  }
+  function fmtDate(ds) {
+    return new Date(ds+'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+  }
+  function fmtDay(ds) {
+    return new Date(ds+'T00:00:00').toLocaleDateString('en-AU',{weekday:'short'}).toUpperCase();
+  }
+  function fmtCountdown(ds) {
+    const today=new Date(); today.setHours(0,0,0,0);
+    const d=new Date(ds+'T00:00:00'); d.setHours(0,0,0,0);
+    const days=Math.round((d-today)/86400000);
+    if(days<=0) return 'today';
+    if(days===1) return 'tomorrow';
+    if(days<14) return `in ${days} days`;
+    return `in ${Math.round(days/7)} weeks`;
+  }
+  function findOpp(name) {
+    return ALL_OPPS.find(o=>o.name===name) || (()=>{
+      const h=[...name].reduce((a,c)=>a+c.charCodeAt(0),0);
+      return {name,color:['#ef4444','#2b7fff','#f5a623','#8b5cf6','#06b6d4'][h%5],emoji:['⚽','🌟','🔥','💫','🌈'][h%5]};
+    })();
+  }
+  function processSchedule(rows) {
+    const fixtures=[], results=[];
+    for (const r of rows) {
+      const oppName = r.opp||r.Opponent||'';
+      const opp = findOpp(String(oppName));
+      const home = String(r.ha||r['Home/Away']||'Home').trim()==='Home';
+      const rawDate = r.date || (r.Date instanceof Date ? r.Date.toISOString().slice(0,10) : String(r.Date||'').slice(0,10));
+      const timeRaw = String(r.time||r.Time||'9:00').replace(/[^\d:]/g,'');
+      const gf = r.gf!=null ? r.gf : r['Goals For'];
+      const ga = r.ga!=null ? r.ga : r['Goals Against'];
+      const hasScore = gf!==null && gf!==undefined && gf!=='';
+      if (hasScore) {
+        results.push({opp,home,us:Number(gf),them:Number(ga),when:fmtDate(rawDate),round:r.round||r.Round});
+      } else {
+        fixtures.push({opp,home,day:fmtDay(rawDate),date:fmtDate(rawDate),dd:String(new Date(rawDate+'T00:00:00').getDate()),time:fmtTime(timeRaw),venue:r.ground||r.Ground||'',countdown:fmtCountdown(rawDate),round:r.round||r.Round});
+      }
+    }
+    return {fixtures, results:results.reverse()};
+  }
+
+  const DEFAULTS = processSchedule(RAW_SCHEDULE);
 
   // ─── State ────────────────────────────────────────────────────────────────────
   const state = {
-    tab: 'games',
-    oppIdx: 0,
-    isHome: true,
-    usScore: 0,
-    themScore: 0,
-    justSaved: false,
-    results: [
-      { opp: O[3], home: true,  us: 3, them: 1, when: '14 Jun' },
-      { opp: O[4], home: false, us: 2, them: 2, when: '7 Jun'  },
-      { opp: O[2], home: false, us: 0, them: 2, when: '31 May' },
-    ],
+    tab:'games', oppIdx:0, isHome:true, usScore:0, themScore:0,
+    justSaved:false, showSettings:false, loading:false,
+    fixtures:DEFAULTS.fixtures, results:DEFAULTS.results,
   };
+  let saveTimer=null;
 
-  let saveTimer = null;
+  // ─── Google Sheets ────────────────────────────────────────────────────────────
+  function getSheetUrl(){ return localStorage.getItem('sheetUrl')||''; }
+  function setSheetUrl(u){ u ? localStorage.setItem('sheetUrl',u) : localStorage.removeItem('sheetUrl'); }
+
+  async function loadFromSheet() {
+    const url=getSheetUrl(); if(!url) return;
+    state.loading=true; render();
+    try {
+      const res=await fetch(url+'?action=schedule');
+      if(res.ok){
+        const rows=await res.json();
+        if(Array.isArray(rows)&&rows.length){
+          const {fixtures,results}=processSchedule(rows);
+          if(fixtures.length||results.length){ state.fixtures=fixtures; state.results=results; }
+        }
+      }
+    } catch(e){}
+    state.loading=false; render();
+  }
+
+  function saveToSheet(result) {
+    const url=getSheetUrl(); if(!url) return;
+    const o=outcome(result.us,result.them);
+    fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({opponent:result.opp.name,ourScore:result.us,theirScore:result.them})
+    }).catch(()=>{});
+  }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────────
-  function badgeStyle(color, size, fs, extra) {
-    return `width:${size}px;height:${size}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:${fs}px;box-shadow:0 5px 12px rgba(0,0,0,.14);flex:none;${extra || ''}`;
+  function badgeStyle(color,size,fs,extra){
+    return `width:${size}px;height:${size}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:${fs}px;box-shadow:0 5px 12px rgba(0,0,0,.14);flex:none;${extra||''}`;
   }
-
-  function ha(home) {
-    return { label: home ? 'Home' : 'Away', icon: home ? '🏠' : '✈️' };
+  function ha(home){ return {label:home?'Home':'Away',icon:home?'🏠':'✈️'}; }
+  function outcome(us,them){
+    const win=us>them,draw=us===them;
+    return {letter:win?'W':draw?'D':'L',full:win?'WON':draw?'DRAW':'LOST',
+      color:win?'#1FAA59':draw?'#ffd23f':'#ef6b6b',textColor:draw?'#7a5a00':'#fff'};
   }
-
-  function outcome(us, them) {
-    const win = us > them, draw = us === them;
-    return {
-      letter:    win ? 'W' : draw ? 'D' : 'L',
-      full:      win ? 'WON' : draw ? 'DRAW' : 'LOST',
-      color:     win ? '#1FAA59' : draw ? '#ffd23f' : '#ef6b6b',
-      textColor: draw ? '#7a5a00' : '#fff',
-    };
-  }
-
-  function clamp(n) { return Math.max(0, Math.min(20, n)); }
-
-  function stepperBtn(id, label) {
+  function clamp(n){ return Math.max(0,Math.min(20,n)); }
+  function stepperBtn(id,label){
     return `<button id="${id}" style="width:52px;height:52px;border-radius:18px;border:none;background:#eafaf0;color:#137a3f;font-family:'Fredoka',sans-serif;font-weight:600;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;">${label}</button>`;
   }
 
   // ─── Tab renderers ────────────────────────────────────────────────────────────
   function renderGames() {
-    const next = FIXTURES[0];
-    const nextHa = ha(next.home);
-
-    const upcomingHTML = FIXTURES.slice(1).map(g => {
-      const gHa = ha(g.home);
-      return `
-        <div style="background:#fff;border-radius:22px;padding:13px;margin-bottom:12px;border:2px solid #f0e7d6;display:flex;align-items:center;gap:13px;">
-          <div style="flex:none;width:50px;text-align:center;background:#eafaf0;border-radius:14px;padding:7px 4px;">
-            <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:10px;color:#137a3f;letter-spacing:.04em;">${g.day}</div>
-            <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:20px;color:#15321f;line-height:1;">${g.dd}</div>
-          </div>
-          <div style="flex:1;">
-            <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;color:#15321f;">vs ${g.opp.name}</div>
-            <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;color:#9a8a70;margin-top:2px;">${gHa.icon} ${gHa.label} · ${g.time} · ${g.venue}</div>
-          </div>
-          <div style="${badgeStyle(g.opp.color, 50, 24)}">${g.opp.emoji}</div>
+    if(state.loading) return `<div style="display:flex;align-items:center;justify-content:center;height:200px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#9a8a70;">Loading from Google Sheets…</div>`;
+    const {fixtures}=state;
+    if(!fixtures.length) return `<div style="text-align:center;padding:40px 20px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:18px;color:#9a8a70;">All games done for the season! 🏆</div>`;
+    const next=fixtures[0], nextHa=ha(next.home);
+    const upcomingHTML=fixtures.slice(1).map(g=>{
+      const gHa=ha(g.home);
+      return `<div style="background:#fff;border-radius:22px;padding:13px;margin-bottom:12px;border:2px solid #f0e7d6;display:flex;align-items:center;gap:13px;">
+        <div style="flex:none;width:50px;text-align:center;background:#eafaf0;border-radius:14px;padding:7px 4px;">
+          <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:10px;color:#137a3f;letter-spacing:.04em;">${g.day}</div>
+          <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:20px;color:#15321f;line-height:1;">${g.dd}</div>
         </div>
-      `;
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;color:#15321f;">vs ${g.opp.name}</div>
+          <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:11px;color:#9a8a70;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${gHa.icon} ${gHa.label} · ${g.time} · ${g.venue}</div>
+        </div>
+        <div style="${badgeStyle(g.opp.color,46,22)}">${g.opp.emoji}</div>
+      </div>`;
     }).join('');
-
     return `
       <div style="background:#fff;border-radius:28px;overflow:hidden;border:2px solid #f0e7d6;box-shadow:0 10px 22px -12px rgba(60,50,20,.25);margin-bottom:20px;">
         <div style="background:#1FAA59;padding:11px 18px;display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;color:#fff;">NEXT GAME</span>
+          <span style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;color:#fff;">NEXT GAME · R${next.round}</span>
           <span style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:11.5px;color:#15321f;background:#ffd23f;padding:4px 11px;border-radius:14px;">${next.countdown}</span>
         </div>
         <div style="padding:18px;">
           <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
             <div style="display:flex;flex-direction:column;align-items:center;gap:7px;flex:1;">
-              <div style="${badgeStyle('#1FAA59', 58, 30)}">⚡</div>
+              <div style="${badgeStyle('#1FAA59',58,30)}">⚡</div>
               <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:13.5px;color:#15321f;text-align:center;line-height:1.1;">Grange Thunder</div>
             </div>
             <div style="flex:none;width:46px;height:46px;border-radius:50%;background:#ffd23f;display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-weight:700;font-size:14px;color:#7a5a00;box-shadow:0 4px 9px rgba(0,0,0,.14);">VS</div>
             <div style="display:flex;flex-direction:column;align-items:center;gap:7px;flex:1;">
-              <div style="${badgeStyle(next.opp.color, 58, 30)}">${next.opp.emoji}</div>
+              <div style="${badgeStyle(next.opp.color,58,30)}">${next.opp.emoji}</div>
               <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:13.5px;color:#15321f;text-align:center;line-height:1.1;">${next.opp.name}</div>
             </div>
           </div>
           <div style="margin-top:16px;text-align:center;font-family:'Fredoka',sans-serif;font-weight:600;font-size:18px;color:#15321f;">${next.day} ${next.date} · ${next.time}</div>
-          <div style="margin-top:10px;display:flex;justify-content:center;gap:8px;">
+          <div style="margin-top:10px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
             <span style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:12px;color:#137a3f;background:#eafaf0;padding:6px 13px;border-radius:16px;">${nextHa.icon} ${nextHa.label}</span>
             <span style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:12px;color:#6f8a7c;background:#f3f6f1;padding:6px 13px;border-radius:16px;">📍 ${next.venue}</span>
           </div>
         </div>
       </div>
-
-      <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#15321f;margin:2px 4px 12px;">More games coming up</div>
-      ${upcomingHTML}
-    `;
+      ${fixtures.length>1?`<div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#15321f;margin:2px 4px 12px;">More games coming up</div>${upcomingHTML}`:''}`;
   }
 
   function renderResults() {
-    const banner = state.justSaved
-      ? `<div class="celebrate" style="background:#1FAA59;color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;font-size:14px;padding:13px 16px;border-radius:20px;margin:2px 0 14px;text-align:center;">🎉 Result saved! Great game!</div>`
-      : '';
-
-    const cardsHTML = state.results.map(r => {
-      const o = outcome(r.us, r.them);
-      const rHa = ha(r.home);
-      return `
-        <div style="background:#fff;border-radius:22px;padding:14px;margin-bottom:12px;border:2px solid #f0e7d6;display:flex;align-items:center;gap:13px;box-shadow:0 6px 14px -10px rgba(60,50,20,.2);">
-          <div style="width:44px;height:44px;border-radius:50%;background:${o.color};color:${o.textColor};display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-weight:700;font-size:20px;flex:none;">${o.letter}</div>
-          <div style="flex:1;">
-            <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;color:#15321f;">vs ${r.opp.name}</div>
-            <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;color:#9a8a70;margin-top:2px;">${rHa.icon} ${rHa.label} · ${r.when}</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:24px;color:#15321f;line-height:1;">${r.us} <span style="color:#d8cdb6;">-</span> ${r.them}</div>
-            <div style="margin-top:4px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:10.5px;letter-spacing:.05em;color:${o.color};">${o.full}</div>
-          </div>
+    const banner=state.justSaved?`<div class="celebrate" style="background:#1FAA59;color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;font-size:14px;padding:13px 16px;border-radius:20px;margin:2px 0 14px;text-align:center;">🎉 Result saved! Great game!</div>`:'';
+    if(state.loading) return banner+`<div style="display:flex;align-items:center;justify-content:center;height:160px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#9a8a70;">Loading…</div>`;
+    if(!state.results.length) return banner+`<div style="text-align:center;padding:40px 20px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#9a8a70;">No results yet!</div>`;
+    const cards=state.results.map(r=>{
+      const o=outcome(r.us,r.them), rHa=ha(r.home);
+      return `<div style="background:#fff;border-radius:22px;padding:14px;margin-bottom:12px;border:2px solid #f0e7d6;display:flex;align-items:center;gap:13px;box-shadow:0 6px 14px -10px rgba(60,50,20,.2);">
+        <div style="width:44px;height:44px;border-radius:50%;background:${o.color};color:${o.textColor};display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-weight:700;font-size:20px;flex:none;">${o.letter}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;color:#15321f;">vs ${r.opp.name}</div>
+          <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;color:#9a8a70;margin-top:2px;">${rHa.icon} ${rHa.label} · ${r.when}</div>
         </div>
-      `;
+        <div style="text-align:center;flex:none;">
+          <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:24px;color:#15321f;line-height:1;">${r.us} <span style="color:#d8cdb6;">-</span> ${r.them}</div>
+          <div style="margin-top:4px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:10.5px;letter-spacing:.05em;color:${o.color};">${o.full}</div>
+        </div>
+      </div>`;
     }).join('');
-
-    return `
-      ${banner}
-      <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#15321f;margin:2px 4px 12px;">Our recent games</div>
-      ${cardsHTML}
-    `;
+    return `${banner}<div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#15321f;margin:2px 4px 12px;">Results this season</div>${cards}`;
   }
 
   function renderAdd() {
-    const opp = O[state.oppIdx];
-    const tog = on => `flex:1;text-align:center;padding:10px;border-radius:14px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;cursor:pointer;border:none;transition:all .15s;background:${on ? '#1FAA59' : 'transparent'};color:${on ? '#fff' : '#9a8a70'};`;
-
+    const opp=ALL_OPPS[state.oppIdx%ALL_OPPS.length];
+    const tog=on=>`flex:1;text-align:center;padding:10px;border-radius:14px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;cursor:pointer;border:none;transition:all .15s;background:${on?'#1FAA59':'transparent'};color:${on?'#fff':'#9a8a70'};`;
+    const connected=!!getSheetUrl();
     return `
       <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:17px;color:#15321f;margin:2px 4px 2px;">Add our result</div>
       <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:12.5px;color:#b79a6f;margin:0 4px 14px;">Pick who we played and tap the scores.</div>
-
       <div style="background:#fff;border-radius:28px;padding:18px;border:2px solid #f0e7d6;box-shadow:0 8px 18px -12px rgba(60,50,20,.2);">
-
         <div style="display:flex;gap:8px;background:#f7f0e4;padding:5px;border-radius:18px;margin-bottom:18px;">
           <button id="btn-home" style="${tog(state.isHome)}">🏠 Home</button>
           <button id="btn-away" style="${tog(!state.isHome)}">✈️ Away</button>
         </div>
-
         <div style="display:flex;align-items:center;gap:14px;">
-          <div style="${badgeStyle('#1FAA59', 64, 32)}">⚡</div>
+          <div style="${badgeStyle('#1FAA59',64,32)}">⚡</div>
           <div style="flex:1;font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#15321f;">Grange Thunder</div>
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0 4px;">
-          ${stepperBtn('btn-dec-us', '–')}
+          ${stepperBtn('btn-dec-us','–')}
           <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:44px;color:#15321f;min-width:52px;text-align:center;">${state.usScore}</div>
-          ${stepperBtn('btn-inc-us', '+')}
+          ${stepperBtn('btn-inc-us','+')}
         </div>
-
         <div style="display:flex;align-items:center;gap:12px;margin:16px 0;">
           <div style="flex:1;height:2px;background:#f3ece0;border-radius:2px;"></div>
           <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:13px;color:#7a5a00;background:#ffd23f;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;">VS</div>
           <div style="flex:1;height:2px;background:#f3ece0;border-radius:2px;"></div>
         </div>
-
         <div style="display:flex;align-items:center;gap:14px;">
-          <div id="btn-cycle-opp" style="${badgeStyle(opp.color, 64, 32, 'cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.16);')}">${opp.emoji}</div>
+          <div id="btn-cycle-opp" style="${badgeStyle(opp.color,64,32,'cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.16);')}">${opp.emoji}</div>
           <div style="flex:1;">
             <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#15321f;">${opp.name}</div>
             <div id="btn-cycle-text" style="font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;color:#1FAA59;cursor:pointer;margin-top:1px;">tap to change ⟳</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0 0;">
-          ${stepperBtn('btn-dec-them', '–')}
+          ${stepperBtn('btn-dec-them','–')}
           <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:44px;color:#15321f;min-width:52px;text-align:center;">${state.themScore}</div>
-          ${stepperBtn('btn-inc-them', '+')}
+          ${stepperBtn('btn-inc-them','+')}
         </div>
       </div>
-
       <button id="btn-save" style="width:100%;margin-top:18px;padding:17px;border:none;border-radius:22px;background:#1FAA59;color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;font-size:18px;cursor:pointer;box-shadow:0 12px 22px -8px rgba(31,170,89,.6);">Save result 🎉</button>
-    `;
+      ${connected
+        ? `<div style="text-align:center;margin-top:12px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:#137a3f;">📊 Syncing to Google Sheets · <span id="btn-open-settings" style="color:#1FAA59;cursor:pointer;text-decoration:underline;">settings</span></div>`
+        : `<button id="btn-open-settings" style="width:100%;margin-top:10px;padding:14px;border:2px dashed #c8e6d0;border-radius:18px;background:transparent;font-family:'Fredoka',sans-serif;font-weight:600;font-size:14px;color:#6aaa80;cursor:pointer;">📊 Connect Google Sheets</button>`
+      }`;
+  }
+
+  // ─── Settings modal ───────────────────────────────────────────────────────────
+  const APPS_SCRIPT =
+`function doGet(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+  const rows = sheet.getDataRange().getValues();
+  if (rows.length < 2) return json([]);
+  const headers = rows[0].map(h => String(h).trim());
+  const data = rows.slice(1).filter(r => r.some(c => c !== '')).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => {
+      obj[h] = row[i] instanceof Date ? row[i].toISOString().slice(0,10) : String(row[i]);
+    });
+    return obj;
+  });
+  return json(data);
+}
+
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+  const d = JSON.parse(e.postData.contents);
+  const rows = sheet.getDataRange().getValues();
+  const h = rows[0].map(x => String(x).trim());
+  const oppCol = h.indexOf('Opponent');
+  const gfCol  = h.indexOf('Goals For');
+  const gaCol  = h.indexOf('Goals Against');
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][oppCol]) === d.opponent && rows[i][gfCol] === '') {
+      sheet.getRange(i+1, gfCol+1).setValue(d.ourScore);
+      sheet.getRange(i+1, gaCol+1).setValue(d.theirScore);
+      return json({status:'updated'});
+    }
+  }
+  return json({status:'not_found'});
+}
+
+function json(d) {
+  return ContentService.createTextOutput(JSON.stringify(d))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+
+  function renderModal() {
+    const modal=document.getElementById('modal');
+    if(!state.showSettings){ modal.innerHTML=''; return; }
+    const current=getSheetUrl();
+    modal.innerHTML=`
+      <div style="position:absolute;inset:0;background:rgba(15,21,17,.65);z-index:100;display:flex;flex-direction:column;justify-content:flex-end;">
+        <div style="background:#fff7ec;border-radius:28px 28px 0 0;padding:22px 18px 32px;max-height:90%;overflow-y:auto;" class="content-scroll">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:20px;color:#15321f;">📊 Google Sheets</div>
+            <button id="btn-modal-close" style="border:none;background:none;font-size:22px;cursor:pointer;color:#9a8a70;padding:4px;">✕</button>
+          </div>
+          <div style="font-family:'Nunito',sans-serif;font-weight:600;font-size:13px;color:#9a8a70;margin-bottom:16px;line-height:1.5;">Loads your fixtures automatically and saves results back to your sheet.</div>
+          <div style="background:#f0f7f3;border-radius:16px;padding:14px;margin-bottom:14px;font-family:'Nunito',sans-serif;font-size:12.5px;color:#15321f;line-height:1.7;">
+            <b>Setup (2 min):</b><br>
+            1. Open your Google Sheet → <b>Extensions → Apps Script</b><br>
+            2. Delete existing code, paste the script below → <b>Save (Ctrl+S)</b><br>
+            3. <b>Deploy → New deployment → Web app</b><br>
+            4. Execute as: <b>Me</b> &nbsp;·&nbsp; Who has access: <b>Anyone</b> → <b>Deploy</b><br>
+            5. Copy the web app URL and paste below
+          </div>
+          <div style="position:relative;margin-bottom:14px;">
+            <pre style="background:#1a1a2a;color:#7fffb0;font-size:9.5px;padding:14px;border-radius:14px;overflow-x:auto;line-height:1.5;white-space:pre;font-family:ui-monospace,monospace;margin:0;">${APPS_SCRIPT.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+            <button id="btn-copy-script" style="position:absolute;top:10px;right:10px;padding:5px 12px;border:none;border-radius:10px;background:rgba(127,255,176,.18);color:#7fffb0;font-family:'Fredoka',sans-serif;font-weight:600;font-size:11px;cursor:pointer;">Copy</button>
+          </div>
+          <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;color:#15321f;margin-bottom:6px;">Your web app URL</div>
+          <input id="sheet-url-input" type="url" placeholder="https://script.google.com/macros/s/…" value="${current}" style="width:100%;padding:13px 14px;border:2px solid #f0e7d6;border-radius:16px;font-family:'Nunito',sans-serif;font-size:12px;color:#15321f;background:#fff;outline:none;margin-bottom:14px;">
+          <div style="display:flex;gap:10px;">
+            <button id="btn-modal-cancel" style="flex:1;padding:14px;border:2px solid #f0e7d6;border-radius:18px;background:transparent;font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;color:#9a8a70;cursor:pointer;">Cancel</button>
+            <button id="btn-modal-save" style="flex:2;padding:14px;border:none;border-radius:18px;background:#1FAA59;color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;cursor:pointer;box-shadow:0 8px 16px -6px rgba(31,170,89,.5);">Save & Connect</button>
+          </div>
+        </div>
+      </div>`;
+    const close=()=>{ state.showSettings=false; renderModal(); };
+    document.getElementById('btn-modal-close').addEventListener('click',close);
+    document.getElementById('btn-modal-cancel').addEventListener('click',close);
+    document.getElementById('btn-copy-script').addEventListener('click',function(){
+      navigator.clipboard.writeText(APPS_SCRIPT).then(()=>{
+        this.textContent='✓ Copied!';
+        setTimeout(()=>{ this.textContent='Copy'; },2000);
+      }).catch(()=>{ this.textContent='(select above)'; });
+    });
+    document.getElementById('btn-modal-save').addEventListener('click',()=>{
+      const url=document.getElementById('sheet-url-input').value.trim();
+      setSheetUrl(url);
+      state.showSettings=false; renderModal(); render();
+      if(url) loadFromSheet();
+    });
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   function render() {
-    const content = document.getElementById('content');
-    const nav     = document.getElementById('nav');
-    const record  = document.getElementById('record');
+    const content=document.getElementById('content');
+    const nav=document.getElementById('nav');
+    const record=document.getElementById('record');
 
-    // Update season record dynamically
-    let w = 0, d = 0, l = 0;
-    state.results.forEach(r => {
-      if (r.us > r.them) w++;
-      else if (r.us === r.them) d++;
-      else l++;
-    });
-    record.innerHTML = `${w} W<br>${d} D · ${l} L`;
+    let w=0,d=0,l=0;
+    state.results.forEach(r=>{ if(r.us>r.them)w++; else if(r.us===r.them)d++; else l++; });
+    record.innerHTML=`${w} W<br>${d} D · ${l} L`;
 
-    // Render nav buttons
-    const navItems = [
-      { tab: 'games',   emoji: '📅', label: 'Games'   },
-      { tab: 'results', emoji: '🏆', label: 'Results' },
-      { tab: 'add',     emoji: '➕', label: 'Add'     },
-    ];
-    nav.innerHTML = navItems.map(({ tab, emoji, label }) => {
-      const on = state.tab === tab;
-      return `<button data-tab="${tab}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:1;padding:8px 0;border-radius:18px;border:none;cursor:pointer;font-family:'Fredoka',sans-serif;font-size:11.5px;font-weight:600;background:${on ? '#1FAA59' : 'transparent'};color:${on ? '#fff' : '#b7a890'};transition:background .15s;"><span style="font-size:20px;">${emoji}</span>${label}</button>`;
-    }).join('');
-
-    nav.querySelectorAll('[data-tab]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        state.tab = btn.dataset.tab;
-        render();
-      });
+    nav.innerHTML=[{tab:'games',emoji:'📅',label:'Games'},{tab:'results',emoji:'🏆',label:'Results'},{tab:'add',emoji:'➕',label:'Add'}]
+      .map(({tab,emoji,label})=>{
+        const on=state.tab===tab;
+        return `<button data-tab="${tab}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:1;padding:8px 0;border-radius:18px;border:none;cursor:pointer;font-family:'Fredoka',sans-serif;font-size:11.5px;font-weight:600;background:${on?'#1FAA59':'transparent'};color:${on?'#fff':'#b7a890'};transition:background .15s;"><span style="font-size:20px;">${emoji}</span>${label}</button>`;
+      }).join('');
+    nav.querySelectorAll('[data-tab]').forEach(btn=>{
+      btn.addEventListener('click',()=>{ state.tab=btn.dataset.tab; render(); });
     });
 
-    // Render content
-    const scrollTop = content.scrollTop;
-    if (state.tab === 'games') {
-      content.innerHTML = renderGames();
-    } else if (state.tab === 'results') {
-      content.innerHTML = renderResults();
-    } else {
-      content.innerHTML = renderAdd();
-      bindAddEvents();
-    }
-    content.scrollTop = scrollTop;
+    const scrollTop=content.scrollTop;
+    if(state.tab==='games')       content.innerHTML=renderGames();
+    else if(state.tab==='results') content.innerHTML=renderResults();
+    else { content.innerHTML=renderAdd(); bindAddEvents(); }
+    content.scrollTop=scrollTop;
+    renderModal();
   }
 
   function bindAddEvents() {
-    document.getElementById('btn-home').addEventListener('click', () => { state.isHome = true; render(); });
-    document.getElementById('btn-away').addEventListener('click', () => { state.isHome = false; render(); });
-
-    document.getElementById('btn-inc-us').addEventListener('click', () => { state.usScore = clamp(state.usScore + 1); render(); });
-    document.getElementById('btn-dec-us').addEventListener('click', () => { state.usScore = clamp(state.usScore - 1); render(); });
-
-    document.getElementById('btn-inc-them').addEventListener('click', () => { state.themScore = clamp(state.themScore + 1); render(); });
-    document.getElementById('btn-dec-them').addEventListener('click', () => { state.themScore = clamp(state.themScore - 1); render(); });
-
-    function cycleOpp() {
-      state.oppIdx = (state.oppIdx + 1) % O.length;
+    document.getElementById('btn-home').addEventListener('click',()=>{ state.isHome=true; render(); });
+    document.getElementById('btn-away').addEventListener('click',()=>{ state.isHome=false; render(); });
+    document.getElementById('btn-inc-us').addEventListener('click',()=>{ state.usScore=clamp(state.usScore+1); render(); });
+    document.getElementById('btn-dec-us').addEventListener('click',()=>{ state.usScore=clamp(state.usScore-1); render(); });
+    document.getElementById('btn-inc-them').addEventListener('click',()=>{ state.themScore=clamp(state.themScore+1); render(); });
+    document.getElementById('btn-dec-them').addEventListener('click',()=>{ state.themScore=clamp(state.themScore-1); render(); });
+    function cycleOpp(){ state.oppIdx=(state.oppIdx+1)%ALL_OPPS.length; render(); }
+    document.getElementById('btn-cycle-opp').addEventListener('click',cycleOpp);
+    document.getElementById('btn-cycle-text').addEventListener('click',cycleOpp);
+    const sheetBtn=document.getElementById('btn-open-settings');
+    if(sheetBtn) sheetBtn.addEventListener('click',()=>{ state.showSettings=true; renderModal(); });
+    document.getElementById('btn-save').addEventListener('click',()=>{
+      const opp=ALL_OPPS[state.oppIdx%ALL_OPPS.length];
+      const newResult={opp,home:state.isHome,us:state.usScore,them:state.themScore,when:'Just now'};
+      state.results.unshift(newResult);
+      state.fixtures=state.fixtures.filter(f=>f.opp.name!==opp.name);
+      state.usScore=0; state.themScore=0; state.justSaved=true; state.tab='results';
+      saveToSheet(newResult);
       render();
-    }
-    document.getElementById('btn-cycle-opp').addEventListener('click', cycleOpp);
-    document.getElementById('btn-cycle-text').addEventListener('click', cycleOpp);
-
-    document.getElementById('btn-save').addEventListener('click', () => {
-      state.results.unshift({
-        opp:  O[state.oppIdx],
-        home: state.isHome,
-        us:   state.usScore,
-        them: state.themScore,
-        when: 'Just now',
-      });
-      state.usScore   = 0;
-      state.themScore = 0;
-      state.justSaved = true;
-      state.tab       = 'results';
-      render();
-
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => {
-        state.justSaved = false;
-        render();
-      }, 2600);
+      saveTimer=setTimeout(()=>{ state.justSaved=false; render(); },2600);
     });
   }
 
   render();
+  loadFromSheet();
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+  }
 </script>
 </body>
 </html>

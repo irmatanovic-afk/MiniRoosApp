@@ -1,0 +1,18 @@
+{
+  "name": "Grange Thunder",
+  "short_name": "Thunder",
+  "description": "Soccer fixture and score tracker for Grange Thunder Under 8s",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fff7ec",
+  "theme_color": "#1FAA59",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
