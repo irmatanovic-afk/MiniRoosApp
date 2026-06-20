@@ -191,7 +191,16 @@
         if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
         return s.slice(0,10);
       })();
-      const timeRaw = String(r.time||r.Time||'9:00').replace(/[^\d:]/g,'');
+      const timeRaw = (() => {
+        const t = r.time || r.Time;
+        if (!t) return '9:00';
+        const s = String(t);
+        if (s.length > 10) {
+          const d = new Date(s);
+          if (!isNaN(d.getTime())) return `${d.getUTCHours()}:${String(d.getUTCMinutes()).padStart(2,'0')}`;
+        }
+        return s.replace(/[^\d:]/g,'');
+      })();
       const gf = r.gf!=null ? r.gf : r['Goals For'];
       const ga = r.ga!=null ? r.ga : r['Goals Against'];
       const hasScore = gf!==null && gf!==undefined && gf!=='';
