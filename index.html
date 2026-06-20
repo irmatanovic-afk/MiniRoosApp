@@ -142,15 +142,27 @@
     const [h,m] = String(t).split(':').map(Number);
     return `${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'am':'pm'}`;
   }
+  function parseDate(ds) {
+    if (!ds) return null;
+    const s = String(ds).trim();
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+    return null;
+  }
   function fmtDate(ds) {
-    return new Date(ds+'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    const d=parseDate(ds);
+    return d ? d.toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : '?';
   }
   function fmtDay(ds) {
-    return new Date(ds+'T00:00:00').toLocaleDateString('en-AU',{weekday:'short'}).toUpperCase();
+    const d=parseDate(ds);
+    return d ? d.toLocaleDateString('en-AU',{weekday:'short'}).toUpperCase() : '?';
   }
   function fmtCountdown(ds) {
-    const today=new Date(); today.setHours(0,0,0,0);
-    const d=new Date(ds+'T00:00:00'); d.setHours(0,0,0,0);
+    const d=parseDate(ds);
+    if(!d) return '';
+    const today=new Date(); today.setHours(0,0,0,0); d.setHours(0,0,0,0);
     const days=Math.round((d-today)/86400000);
     if(days<=0) return 'today';
     if(days===1) return 'tomorrow';
@@ -185,7 +197,7 @@
       if (hasScore) {
         results.push({opp,home,us:Number(gf),them:Number(ga),when:fmtDate(rawDate),round:r.round||r.Round});
       } else {
-        fixtures.push({opp,home,day:fmtDay(rawDate),date:fmtDate(rawDate),dd:String(new Date(rawDate+'T00:00:00').getDate()),time:fmtTime(timeRaw),venue:r.ground||r.Ground||'',countdown:fmtCountdown(rawDate),round:r.round||r.Round});
+        fixtures.push({opp,home,day:fmtDay(rawDate),date:fmtDate(rawDate),dd:String(parseDate(rawDate)?.getDate()||''),time:fmtTime(timeRaw),venue:r.ground||r.Ground||'',countdown:fmtCountdown(rawDate),round:r.round||r.Round});
       }
     }
     return {fixtures, results:results.reverse()};
