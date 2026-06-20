@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <title>Soccer Tracker — Grange Thunder</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #e7e5df;
+      font-family: 'Nunito', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 48px 24px;
+    }
+
+    @media (max-width: 460px) {
+      body { padding: 0; align-items: stretch; min-height: 100dvh; }
+      .phone-outer {
+        width: 100% !important;
+        height: 100dvh !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+      }
+      .phone-inner { border-radius: 0 !important; }
+    }
+
+    @keyframes pop {
+      0%   { transform: scale(.7); opacity: 0; }
+      60%  { transform: scale(1.06); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .content-scroll::-webkit-scrollbar { width: 0; height: 0; }
+    .content-scroll { scrollbar-width: none; }
+
+    .celebrate { animation: pop .4s ease; }
+
+    button { -webkit-tap-highlight-color: transparent; }
+    button:active { opacity: .82; }
+  </style>
+</head>
+<body>
+
+<div class="phone-outer" style="width:392px;height:836px;background:#0f1511;border-radius:48px;padding:12px;box-shadow:0 40px 70px -30px rgba(20,40,25,.5);flex:none;">
+  <div class="phone-inner" style="position:relative;width:100%;height:100%;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;background:#fff7ec;">
+
+    <!-- Notch -->
+    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:132px;height:30px;background:#0f1511;border-radius:0 0 18px 18px;z-index:20;pointer-events:none;"></div>
+
+    <!-- Status bar -->
+    <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:14px 24px 0;font-family:'Fredoka',sans-serif;font-weight:600;font-size:14px;color:#15321f;flex:none;">
+      <div>9:41</div>
+      <div style="display:flex;align-items:center;gap:7px;">
+        <div style="display:flex;align-items:flex-end;gap:2px;height:11px;">
+          <div style="width:3px;height:5px;background:#15321f;border-radius:1px;"></div>
+          <div style="width:3px;height:7px;background:#15321f;border-radius:1px;"></div>
+          <div style="width:3px;height:9px;background:#15321f;border-radius:1px;"></div>
+          <div style="width:3px;height:11px;background:#15321f;border-radius:1px;"></div>
+        </div>
+        <div style="width:22px;height:11px;border:1.5px solid #15321f;border-radius:3px;padding:1.5px;">
+          <div style="width:80%;height:100%;background:#15321f;border-radius:1px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team header -->
+    <div style="margin:6px 16px 2px;background:#1FAA59;border-radius:26px;padding:16px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 24px -12px rgba(31,170,89,.6);flex:none;">
+      <div style="width:54px;height:54px;border-radius:50%;background:#ffd23f;display:flex;align-items:center;justify-content:center;font-size:30px;flex:none;">⚡</div>
+      <div style="flex:1;">
+        <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:22px;color:#fff;line-height:1.05;">Grange Thunder</div>
+        <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:12.5px;color:rgba(255,255,255,.9);margin-top:2px;">Under 8s · Saturday League</div>
+      </div>
+      <div id="record" style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:11px;color:#fff;background:rgba(255,255,255,.22);padding:5px 10px;border-radius:14px;text-align:center;line-height:1.2;"></div>
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="content-scroll" id="content" style="flex:1;overflow-y:auto;padding:14px 16px 20px;"></div>
+
+    <!-- Bottom nav -->
+    <div id="nav" style="flex:none;display:flex;gap:8px;padding:10px 16px 16px;background:#fff7ec;"></div>
+
+  </div>
+</div>
+
+<script>
+  // ─── Data ─────────────────────────────────────────────────────────────────────
+  const O = [
+    { name: 'Riverside Rovers', color: '#ef4444', emoji: '🦊' },
+    { name: 'Seaview Sharks',   color: '#2b7fff', emoji: '🦈' },
+    { name: 'Sunnybrook FC',    color: '#f5a623', emoji: '☀️' },
+    { name: 'Hilltop Comets',   color: '#8b5cf6', emoji: '☄️' },
+    { name: 'Bayside Dolphins', color: '#06b6d4', emoji: '🐬' },
+  ];
+
+  const FIXTURES = [
+    { opp: O[0], home: true,  day: 'SAT', date: '21 Jun', dd: '21', time: '10:00 am', venue: 'Grange Oval',     countdown: 'in 3 days'  },
+    { opp: O[1], home: false, day: 'SAT', date: '28 Jun', dd: '28', time: '9:30 am',  venue: 'Seaview Reserve', countdown: 'next week'  },
+    { opp: O[2], home: true,  day: 'SAT', date: '5 Jul',  dd: '5',  time: '10:00 am', venue: 'Grange Oval',     countdown: 'in 2 weeks' },
+  ];
+
+  // ─── State ────────────────────────────────────────────────────────────────────
+  const state = {
+    tab: 'games',
+    oppIdx: 0,
+    isHome: true,
+    usScore: 0,
+    themScore: 0,
+    justSaved: false,
+    results: [
+      { opp: O[3], home: true,  us: 3, them: 1, when: '14 Jun' },
+      { opp: O[4], home: false, us: 2, them: 2, when: '7 Jun'  },
+      { opp: O[2], home: false, us: 0, them: 2, when: '31 May' },
+    ],
+  };
+
+  let saveTimer = null;
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────────
+  function badgeStyle(color, size, fs, extra) {
+    return `width:${size}px;height:${size}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:${fs}px;box-shadow:0 5px 12px rgba(0,0,0,.14);flex:none;${extra || ''}`;
+  }
+
+  function ha(home) {
+    return { label: home ? 'Home' : 'Away', icon: home ? '🏠' : '✈️' };
+  }
+
+  function outcome(us, them) {
+    const win = us > them, draw = us === them;
+    return {
+      letter:    win ? 'W' : draw ? 'D' : 'L',
+      full:      win ? 'WON' : draw ? 'DRAW' : 'LOST',
+      color:     win ? '#1FAA59' : draw ? '#ffd23f' : '#ef6b6b',
+      textColor: draw ? '#7a5a00' : '#fff',
+    };
+  }
+
+  function clamp(n) { return Math.max(0, Math.min(20, n)); }
+
+  function stepperBtn(id, label) {
+    return `<button id="${id}" style="width:52px;height:52px;border-radius:18px;border:none;background:#eafaf0;color:#137a3f;font-family:'Fredoka',sans-serif;font-weight:600;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;">${label}</button>`;
+  }
+
+  // ─── Tab renderers ────────────────────────────────────────────────────────────
+  function renderGames() {
+    const next = FIXTURES[0];
+    const nextHa = ha(next.home);
+
+    const upcomingHTML = FIXTURES.slice(1).map(g => {
+      const gHa = ha(g.home);
+      return `
+        <div style="background:#fff;border-radius:22px;padding:13px;margin-bottom:12px;border:2px solid #f0e7d6;display:flex;align-items:center;gap:13px;">
+          <div style="flex:none;width:50px;text-align:center;background:#eafaf0;border-radius:14px;padding:7px 4px;">
+            <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:10px;color:#137a3f;letter-spacing:.04em;">${g.day}</div>
+            <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:20px;color:#15321f;line-height:1;">${g.dd}</div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;color:#15321f;">vs ${g.opp.name}</div>
+            <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;color:#9a8a70;margin-top:2px;">${gHa.icon} ${gHa.label} · ${g.time} · ${g.venue}</div>
+          </div>
+          <div style="${badgeStyle(g.opp.color, 50, 24)}">${g.opp.emoji}</div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div style="background:#fff;border-radius:28px;overflow:hidden;border:2px solid #f0e7d6;box-shadow:0 10px 22px -12px rgba(60,50,20,.25);margin-bottom:20px;">
+        <div style="background:#1FAA59;padding:11px 18px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;color:#fff;">NEXT GAME</span>
+          <span style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:11.5px;color:#15321f;background:#ffd23f;padding:4px 11px;border-radius:14px;">${next.countdown}</span>
+        </div>
+        <div style="padding:18px;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:7px;flex:1;">
+              <div style="${badgeStyle('#1FAA59', 58, 30)}">⚡</div>
+              <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:13.5px;color:#15321f;text-align:center;line-height:1.1;">Grange Thunder</div>
+            </div>
+            <div style="flex:none;width:46px;height:46px;border-radius:50%;background:#ffd23f;display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-weight:700;font-size:14px;color:#7a5a00;box-shadow:0 4px 9px rgba(0,0,0,.14);">VS</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:7px;flex:1;">
+              <div style="${badgeStyle(next.opp.color, 58, 30)}">${next.opp.emoji}</div>
+              <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:13.5px;color:#15321f;text-align:center;line-height:1.1;">${next.opp.name}</div>
+            </div>
+          </div>
+          <div style="margin-top:16px;text-align:center;font-family:'Fredoka',sans-serif;font-weight:600;font-size:18px;color:#15321f;">${next.day} ${next.date} · ${next.time}</div>
+          <div style="margin-top:10px;display:flex;justify-content:center;gap:8px;">
+            <span style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:12px;color:#137a3f;background:#eafaf0;padding:6px 13px;border-radius:16px;">${nextHa.icon} ${nextHa.label}</span>
+            <span style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:12px;color:#6f8a7c;background:#f3f6f1;padding:6px 13px;border-radius:16px;">📍 ${next.venue}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#15321f;margin:2px 4px 12px;">More games coming up</div>
+      ${upcomingHTML}
+    `;
+  }
+
+  function renderResults() {
+    const banner = state.justSaved
+      ? `<div class="celebrate" style="background:#1FAA59;color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;font-size:14px;padding:13px 16px;border-radius:20px;margin:2px 0 14px;text-align:center;">🎉 Result saved! Great game!</div>`
+      : '';
+
+    const cardsHTML = state.results.map(r => {
+      const o = outcome(r.us, r.them);
+      const rHa = ha(r.home);
+      return `
+        <div style="background:#fff;border-radius:22px;padding:14px;margin-bottom:12px;border:2px solid #f0e7d6;display:flex;align-items:center;gap:13px;box-shadow:0 6px 14px -10px rgba(60,50,20,.2);">
+          <div style="width:44px;height:44px;border-radius:50%;background:${o.color};color:${o.textColor};display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-weight:700;font-size:20px;flex:none;">${o.letter}</div>
+          <div style="flex:1;">
+            <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;color:#15321f;">vs ${r.opp.name}</div>
+            <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;color:#9a8a70;margin-top:2px;">${rHa.icon} ${rHa.label} · ${r.when}</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:24px;color:#15321f;line-height:1;">${r.us} <span style="color:#d8cdb6;">-</span> ${r.them}</div>
+            <div style="margin-top:4px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:10.5px;letter-spacing:.05em;color:${o.color};">${o.full}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      ${banner}
+      <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#15321f;margin:2px 4px 12px;">Our recent games</div>
+      ${cardsHTML}
+    `;
+  }
+
+  function renderAdd() {
+    const opp = O[state.oppIdx];
+    const tog = on => `flex:1;text-align:center;padding:10px;border-radius:14px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;cursor:pointer;border:none;transition:all .15s;background:${on ? '#1FAA59' : 'transparent'};color:${on ? '#fff' : '#9a8a70'};`;
+
+    return `
+      <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:17px;color:#15321f;margin:2px 4px 2px;">Add our result</div>
+      <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:12.5px;color:#b79a6f;margin:0 4px 14px;">Pick who we played and tap the scores.</div>
+
+      <div style="background:#fff;border-radius:28px;padding:18px;border:2px solid #f0e7d6;box-shadow:0 8px 18px -12px rgba(60,50,20,.2);">
+
+        <div style="display:flex;gap:8px;background:#f7f0e4;padding:5px;border-radius:18px;margin-bottom:18px;">
+          <button id="btn-home" style="${tog(state.isHome)}">🏠 Home</button>
+          <button id="btn-away" style="${tog(!state.isHome)}">✈️ Away</button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="${badgeStyle('#1FAA59', 64, 32)}">⚡</div>
+          <div style="flex:1;font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#15321f;">Grange Thunder</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0 4px;">
+          ${stepperBtn('btn-dec-us', '–')}
+          <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:44px;color:#15321f;min-width:52px;text-align:center;">${state.usScore}</div>
+          ${stepperBtn('btn-inc-us', '+')}
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;margin:16px 0;">
+          <div style="flex:1;height:2px;background:#f3ece0;border-radius:2px;"></div>
+          <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:13px;color:#7a5a00;background:#ffd23f;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;">VS</div>
+          <div style="flex:1;height:2px;background:#f3ece0;border-radius:2px;"></div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div id="btn-cycle-opp" style="${badgeStyle(opp.color, 64, 32, 'cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.16);')}">${opp.emoji}</div>
+          <div style="flex:1;">
+            <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:#15321f;">${opp.name}</div>
+            <div id="btn-cycle-text" style="font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;color:#1FAA59;cursor:pointer;margin-top:1px;">tap to change ⟳</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0 0;">
+          ${stepperBtn('btn-dec-them', '–')}
+          <div style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:44px;color:#15321f;min-width:52px;text-align:center;">${state.themScore}</div>
+          ${stepperBtn('btn-inc-them', '+')}
+        </div>
+      </div>
+
+      <button id="btn-save" style="width:100%;margin-top:18px;padding:17px;border:none;border-radius:22px;background:#1FAA59;color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;font-size:18px;cursor:pointer;box-shadow:0 12px 22px -8px rgba(31,170,89,.6);">Save result 🎉</button>
+    `;
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
+  function render() {
+    const content = document.getElementById('content');
+    const nav     = document.getElementById('nav');
+    const record  = document.getElementById('record');
+
+    // Update season record dynamically
+    let w = 0, d = 0, l = 0;
+    state.results.forEach(r => {
+      if (r.us > r.them) w++;
+      else if (r.us === r.them) d++;
+      else l++;
+    });
+    record.innerHTML = `${w} W<br>${d} D · ${l} L`;
+
+    // Render nav buttons
+    const navItems = [
+      { tab: 'games',   emoji: '📅', label: 'Games'   },
+      { tab: 'results', emoji: '🏆', label: 'Results' },
+      { tab: 'add',     emoji: '➕', label: 'Add'     },
+    ];
+    nav.innerHTML = navItems.map(({ tab, emoji, label }) => {
+      const on = state.tab === tab;
+      return `<button data-tab="${tab}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:1;padding:8px 0;border-radius:18px;border:none;cursor:pointer;font-family:'Fredoka',sans-serif;font-size:11.5px;font-weight:600;background:${on ? '#1FAA59' : 'transparent'};color:${on ? '#fff' : '#b7a890'};transition:background .15s;"><span style="font-size:20px;">${emoji}</span>${label}</button>`;
+    }).join('');
+
+    nav.querySelectorAll('[data-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.tab = btn.dataset.tab;
+        render();
+      });
+    });
+
+    // Render content
+    const scrollTop = content.scrollTop;
+    if (state.tab === 'games') {
+      content.innerHTML = renderGames();
+    } else if (state.tab === 'results') {
+      content.innerHTML = renderResults();
+    } else {
+      content.innerHTML = renderAdd();
+      bindAddEvents();
+    }
+    content.scrollTop = scrollTop;
+  }
+
+  function bindAddEvents() {
+    document.getElementById('btn-home').addEventListener('click', () => { state.isHome = true; render(); });
+    document.getElementById('btn-away').addEventListener('click', () => { state.isHome = false; render(); });
+
+    document.getElementById('btn-inc-us').addEventListener('click', () => { state.usScore = clamp(state.usScore + 1); render(); });
+    document.getElementById('btn-dec-us').addEventListener('click', () => { state.usScore = clamp(state.usScore - 1); render(); });
+
+    document.getElementById('btn-inc-them').addEventListener('click', () => { state.themScore = clamp(state.themScore + 1); render(); });
+    document.getElementById('btn-dec-them').addEventListener('click', () => { state.themScore = clamp(state.themScore - 1); render(); });
+
+    function cycleOpp() {
+      state.oppIdx = (state.oppIdx + 1) % O.length;
+      render();
+    }
+    document.getElementById('btn-cycle-opp').addEventListener('click', cycleOpp);
+    document.getElementById('btn-cycle-text').addEventListener('click', cycleOpp);
+
+    document.getElementById('btn-save').addEventListener('click', () => {
+      state.results.unshift({
+        opp:  O[state.oppIdx],
+        home: state.isHome,
+        us:   state.usScore,
+        them: state.themScore,
+        when: 'Just now',
+      });
+      state.usScore   = 0;
+      state.themScore = 0;
+      state.justSaved = true;
+      state.tab       = 'results';
+      render();
+
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        state.justSaved = false;
+        render();
+      }, 2600);
+    });
+  }
+
+  render();
+</script>
+</body>
+</html>
