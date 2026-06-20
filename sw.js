@@ -1,4 +1,4 @@
-const CACHE = 'grange-thunder-v1';
+const CACHE = 'grange-lions-v2';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
