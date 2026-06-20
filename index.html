@@ -149,7 +149,8 @@
     if (m) return new Date(+m[1], +m[2]-1, +m[3]);
     m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (m) return new Date(+m[3], +m[2]-1, +m[1]);
-    return null;
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
   function fmtDate(ds) {
     const d=parseDate(ds);
@@ -381,7 +382,7 @@
   const data = rows.slice(1).filter(r => r.some(c => c !== '')).map(row => {
     const obj = {};
     headers.forEach((h, i) => {
-      obj[h] = row[i] instanceof Date ? Utilities.formatDate(row[i], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(row[i]);
+      const v = row[i]; obj[h] = (v && typeof v === 'object' && typeof v.getTime === 'function') ? Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(v);
     });
     return obj;
   });
